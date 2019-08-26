@@ -18,13 +18,11 @@
  */
 
 package com.github.ontio.network.rest;
-import java.io.BufferedReader;
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
+
+import com.alibaba.fastjson.JSON;
+
+import javax.net.ssl.*;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -33,16 +31,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-
-import com.alibaba.fastjson.JSON;
 
 public class http {
     private static final String DEFAULT_CHARSET = "UTF-8";
@@ -64,6 +54,7 @@ public class http {
             sslContext.init(null, new TrustManager[]{new X509()}, new SecureRandom());
             SSLSocketFactory ssf = sslContext.getSocketFactory();
             ((HttpsURLConnection)http).setSSLSocketFactory(ssf);
+            setHostNameVerifier(http, u);
         }
         http.setDoOutput(true);
         http.setDoInput(true);
@@ -102,6 +93,7 @@ public class http {
             sslContext.init(null, new TrustManager[]{new X509()}, new SecureRandom());
             SSLSocketFactory ssf = sslContext.getSocketFactory();
             ((HttpsURLConnection)http).setSSLSocketFactory(ssf);
+            setHostNameVerifier(http, u);
         }
         http.setDoOutput(true);
         http.setDoInput(true);
@@ -155,6 +147,7 @@ public class http {
             sslContext.init(null, new TrustManager[]{new X509()}, new SecureRandom());
             SSLSocketFactory ssf = sslContext.getSocketFactory();
             ((HttpsURLConnection)http).setSSLSocketFactory(ssf);
+            setHostNameVerifier(http, u);
         }
         http.setDoOutput(true);
         http.setDoInput(true);
@@ -190,7 +183,7 @@ public class http {
             return get(url+cvtParams(params), false);
         }
     }
-    
+
 
     private static String cvtParams( Map<String, String> params){
         if (params == null || params.isEmpty()) {
@@ -219,5 +212,18 @@ public class http {
     	if(objs != null	&& objs.length > 0) {
     		Arrays.stream(objs).forEach(p -> {try {p.close(); } catch(Exception e){}});
     	}
+    }
+
+    private static void setHostNameVerifier(HttpURLConnection http  , URL url) {
+        // no need to verify local host
+        String host = url.getHost();
+        if ("localhost".equals(host) || "127.0.0.1".equals(host)) {
+            ((HttpsURLConnection) http).setHostnameVerifier(new javax.net.ssl.HostnameVerifier() {
+                public boolean verify(String hostname,
+                                      SSLSession sslsession) {
+                    return true;
+                }
+            });
+        }
     }
 }
